@@ -1,8 +1,4 @@
-data_set=[  "WE", "eletronico", "uso diário";
-            "A LOT", "comestível", "doce";
-            "asdasdf", "comestível", "salgado";
-            "MOOORE", "eletronico", "entretenimento";
-            "MOOOOOOORE", "brinquedo", "entretenimento"];
+data_set = load("Dataset.m");
 
 treino = data_set(1:3,:);
 teste = data_set(4,:);
