@@ -1,3 +1,4 @@
+clear;
 dataset = 'Reviews.csv';
 data_demasiado_grande = readtable(dataset, 'Delimiter', ',', 'TextType', 'string');
 disp(data_demasiado_grande(1:5,:));
@@ -5,8 +6,9 @@ disp(data_demasiado_grande(1:5,:));
 data = data_demasiado_grande(:, ["ProductId", "UserId", "Score"]);
 disp(data(1:5,:));
 
+scores=data.("Score");
 avaliacoes = data_demasiado_grande.("Summary");
-disp(avaliacoes(1));
+%disp(avaliacoes(1));
 
 Retirar_virgulas_e_assim = regexprep(avaliacoes, '[^\w\s]', '');
 minusculo = lower(Retirar_virgulas_e_assim);
@@ -47,19 +49,21 @@ numero_de_palavras = countcats(categorical(palavras));
 [numeros_organizados, indices_organizados] = sort(numero_de_palavras, 'descend');
 palavras_organizadas = palavras_unicas(indices_organizados);
 
-disp(table(palavras_organizadas(30:50), numeros_organizados(30:50), 'VariableNames', {'Palavra', 'Contagem'}));
+%disp(table(palavras_organizadas(1:10), numeros_organizados(1:10), 'VariableNames', {'Palavra', 'Contagem'}));
 
-palavras_importantes = palavras_unicas(indices_organizados(1:1000)); 
+palavras_importantes = palavras_unicas(indices_organizados(1:500)); 
+disp(table(palavras_importantes, numeros_organizados(1:500), 'VariableNames', {'Palavra', 'Contagem'}));
 
 % Redefinir matriz com palavras importantes
-num_avaliacoes = length(palavras);
+num_avaliacoes = length(avaliacoes);
 num_palavras = length(palavras_importantes);
 TREINO = zeros(num_avaliacoes, num_palavras);
 
 % Atualizar preenchimento da matriz
 for i = 1:num_avaliacoes
+    avaliacao = avaliacoes{i};
+    palavras=split(avaliacao);
     for j = 1:num_palavras
-
         palavra_importante = palavras_importantes(j);
         ocorrencias = sum(palavras == palavra_importante);
         %guardar contagem em (frase, palavra_unica)
@@ -71,7 +75,7 @@ end
 imagesc(TREINO);
 
 % Definir classes baseadas no score (exemplo: Score >= 4 é positivo, <4 é negativo)
-classes = scores >= 4; % 1 para positivo, 0 para negativo
+classes = scores >= 3; % 1 para positivo, 0 para negativo
 classes = categorical(classes, [0 1], {'NEG', 'POS'});
 
 % Probabilidades a priori
@@ -89,28 +93,32 @@ prob_palavra_dado_POS = contagem_palavras_POS / total_palavras_POS;
 
 % Cálculo para palavras em NEG
 contagem_palavras_NEG = sum(TREINO_NEG) + 1; % Suavização de Laplace
-total_palavras_NEG = sum(contagem_palavras_NEG) + length(palavras_unicas);
+total_palavras_NEG = sum(contagem_palavras_NEG) + num_palavras;
 prob_palavra_dado_NEG = contagem_palavras_NEG / total_palavras_NEG;
 
 % Avaliação de teste
-avaliacao_teste = "predictable with no fun";
+avaliacao_teste = "bad";
 palavras_teste = split(avaliacao_teste);
 
 % Calcular probabilidade de NEG
 prob_NEG = pNEG;
 for p = 1:length(palavras_teste)
-    if ismember(palavras_teste{p}, palavras_unicas)
-        idx = find(palavras_unicas == palavras_teste{p});
-        prob_NEG = prob_NEG * prob_palavra_dado_NEG(idx);
+    if any(strcmp(palavras_unicas, palavras_teste{p}))
+        idx = find(strcmp(palavras_unicas, palavras_teste{p})); % Localizar índice correto
+        if idx <= length(prob_palavra_dado_NEG) % Garantir que o índice não excede o tamanho
+            prob_NEG = prob_NEG * prob_palavra_dado_NEG(idx);
+        end
     end
 end
 
 % Calcular probabilidade de POS
 prob_POS = pPOS;
 for p = 1:length(palavras_teste)
-    if ismember(palavras_teste{p}, palavras_unicas)
-        idx = find(palavras_unicas == palavras_teste{p});
-        prob_POS = prob_POS * prob_palavra_dado_POS(idx);
+    if any(strcmp(palavras_unicas, palavras_teste{p}))
+        idx = find(strcmp(palavras_unicas, palavras_teste{p})); % Localizar índice correto
+        if idx <= length(prob_palavra_dado_POS) % Garantir que o índice não excede o tamanho
+            prob_POS = prob_POS * prob_palavra_dado_POS(idx);
+        end
     end
 end
 
