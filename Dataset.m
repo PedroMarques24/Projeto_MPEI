@@ -75,11 +75,14 @@ end
 imagesc(TREINO);
 
 % Definir classes baseadas no score (exemplo: Score >= 4 é positivo, <4 é negativo)
-classes = scores >= 3; % 1 para positivo, 0 para negativo
+classes = scores >= 5;% 1 para positivo, 0 para negativo
+sum(classes)
 classes = categorical(classes, [0 1], {'NEG', 'POS'});
+% Pos = 443777
+% Neg = 124677
 
 % Probabilidades a priori
-pNEG = sum(classes == 'NEG') / length(classes);
+pNEG = sum(classes == 'NEG') / length(classes); 
 pPOS = sum(classes == 'POS') / length(classes);
 
 % Selecionar linhas de treino por classe
@@ -97,7 +100,7 @@ total_palavras_NEG = sum(contagem_palavras_NEG) + num_palavras;
 prob_palavra_dado_NEG = contagem_palavras_NEG / total_palavras_NEG;
 
 % Avaliação de teste
-avaliacao_teste = "bad";
+avaliacao_teste = "pricey";
 palavras_teste = split(avaliacao_teste);
 
 % Calcular probabilidade de NEG
