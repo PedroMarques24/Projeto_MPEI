@@ -164,24 +164,25 @@ end
 users_parecidos = idx_users_parecidos(1:5);
 
 % Obter os produtos comprados pelos usuários mais similares
-itens_recomendados = [];
-for i = 1:numel(users_parecidos)
-    similar_user = users_parecidos(i);
-    itens_recomendados = [itens_recomendados; set{similar_user}];
-end
+
+itens_recomendados = [set{users_parecidos(1)}];
+
 
 % Excluir os produtos já comprados pelo usuário selecionado
 user_purchased_itens = set{alguem_em_especifico};
 itens_recomendados = setdiff(itens_recomendados, user_purchased_itens);
+categoria_preferida = nomes_previstos;
+itens_na_categoria = data.ProductID(data.Category_encoded == categoria_preferida);
+itens_recomendados = intersect(itens_recomendados, itens_na_categoria);
 
 % Exibir os produtos recomendados
-disp('ID dos produtos recomendados para o usuário com base em usuários similares (O dataset atual n tem nomes):');
+disp('Produtos recomendados para o usuário com base no usuário mais semelhante e na categoria preferida:');
 disp(unique(data.Name(itens_recomendados)));
 
 % ---- RESULTADOS ----
 % Exibir similaridade entre o usuário escolhido e os outros
-disp(['Usuário selecionado: ', num2str(alguem_em_especifico)]);
+disp(['Usuário selecionado: ', num2str(alguem(alguem_em_especifico))]);
 for ola = 1:numel(users_parecidos)
-    disp(['Similaridade com usuário ', num2str(users_parecidos(ola)), ': ', num2str(similarities(users_parecidos(ola)))]);
+    disp(['Similaridade com usuário ', num2str(alguem(users_parecidos(ola))), ': ', num2str(similarities(users_parecidos(ola)))]);
 
 end
