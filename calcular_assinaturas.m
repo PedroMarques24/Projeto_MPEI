@@ -6,9 +6,9 @@ function assinaturas = calcular_assinaturas(set, num_users, num_hashes, num_iten
     % Itera pelas k funções de hash
     for hf = 1:num_hashes
 
-        % Itera pelos usuários (conjuntos de itens)
+        % Itera pelos utilizadores (conjuntos de itens)
         for c = 1:num_users
-            % Obtém os itens comprados pelo usuário c
+            % Obtém os itens comprados pelo utilizador c
             conjunto = set{c};
             hc = zeros(1, length(conjunto)); % Vetor para armazenar os valores de hash
 

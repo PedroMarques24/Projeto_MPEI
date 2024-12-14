@@ -37,8 +37,6 @@ end
 
 produtos = recomendacoes_possiveis(1:end, :);
 
-waitbar = waitbar(0,'Calculating Recomendations ...');
-
 % Exibir os produtos recomendados (da categoria predita e não comprados)
 fprintf('\n                      Produtos da categoria %s com as melhores avaliações.                   \n',Category{nomes_previstos});
 fprintf('=====================================================================================================================\n');
@@ -57,4 +55,3 @@ for p = 1:height(produtos)
 end
 
 fprintf('---------------------------------------------------------------------------------------------------------------------\n');
-delete(waitbar);
