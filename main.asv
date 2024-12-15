@@ -7,14 +7,8 @@ data = data(~any(ismissing(data), 2), {'Name','UserID', 'ProductID', 'Category',
 
 % ---- NAIVE BAYES ----
 
-% Seleciona um utilizador aleatóriamente
+% Seleciona um utilizador através do terminal
 utilizador = input('Insira o UserID de utilizador (de 100 a 149): ');
-
-% Verificar se o valor está dentro do intervalo válido
-while utilizador < 100 || utilizador > 149 || mod(utilizador,1) ~= 0
-    disp('Erro: O UserID deve ser um número inteiro entre 100 e 149.');
-    utilizador = input('Insira o UserID de utilizador (de 100 a 149): ');
-end
 
 % Transformar categorias em índices
 [data.Category_encoded, Category] = grp2idx(data.Category);
@@ -22,7 +16,33 @@ end
 % Filtrar os produtos comprados pelo utilizador selecionado
 user_data = data(data.UserID == utilizador, :);
 
-% Usar as compras do utilizador para treinar o Naive Bayes
+% Criar waitbar para os dois gráficos
+h = waitbar(0, 'Iniciando a criação dos gráficos...');
+pause(1);
+
+% Gerar gráfico circular das categorias de produtos comprados
+if isempty(user_data)
+    disp('Este utilizador não comprou produtos.');
+else
+    %--------- Gráfico Circular ----------    
+    % Contar a quantidade de produtos por categoria
+    categoria_counts = groupcounts(user_data.Category);
+    
+    % Atualizar waitbar
+    waitbar(0.5, h, 'Preparando dados para os gráficos...');
+    
+    % Definir o tamanho da janela da figura (ajustando a propriedade 'Position')
+    set(gcf, 'Position', [100, 100, 1300, 600]); % [x, y, largura, altura]
+
+    % Gráfico circular
+    figure(1);
+    subplot(1, 2, 1);
+    pie(categoria_counts);
+    legend(unique(user_data.Category), 'Location', 'bestoutside');
+    title(['Distribuição de Produtos por Categoria para o Utilizador ', num2str(utilizador)]);
+end
+
+% Usar Naive Bayes para prever com base nas compras do utilizador
 ratings = user_data.Rating;
 y = user_data.Category_encoded;
 
@@ -65,64 +85,29 @@ else
     nomes_previstos = categories(predicted_Category);
 end
 
-% Chamar a função para gerar os gráficos, passando os parâmetros necessários
-criar_graficos(user_data, Category, prob_log, categories, predicted_Category,utilizador);
+%-------- Gráfico de Barras -----------
+% Criar gráfico de barras para as probabilidades logarítmicas
+subplot(1, 2, 2);
+bar(prob_log);
+title('Logaritmo das Probabilidades para cada Categoria');
+xlabel('Categorias');
+ylabel('Log(P(C|F))');
+set(gca, 'XTickLabel', Category(categories), 'XTick', 1:length(categories));
+xtickangle(45);  % Rotaciona os rótulos do eixo X para maior legibilidade
+grid on;
 
-fprintf('\nPredicted Category: %s\n', Category{nomes_previstos});
+% Destacar a categoria prevista no gráfico
+hold on;
+bar(predicted_Category, prob_log(predicted_Category), 'FaceColor', 'r', 'EdgeColor', 'k');
+legend('Log(P(C|F))', 'Categoria Prevista', 'Location', 'Best');
+hold off;
 
-function criar_graficos(user_data, Category, prob_log, categories, predicted_Category, utilizador)
-    % Função para gerar os gráficos para o utilizador
-    
-    % Gerar gráfico circular das categorias de produtos comprados
-    if isempty(user_data)
-        disp('Este utilizador não comprou produtos.');
-    else
-        % Criar waitbar para os dois gráficos
-        h = waitbar(0, 'Iniciando criação dos gráficos...');
-        pause(1);
+% Finalizar waitbar
+waitbar(1, h, 'Gráficos concluídos!');
+pause(1);
+close(h);
 
-        % Contar a quantidade de produtos por categoria
-        categoria_counts = groupcounts(user_data.Category);
-        
-        % Atualizar waitbar
-        waitbar(0.5, h, 'Preparando dados para os gráficos...');
-        
-        % Criar subplots
-        figure;
-
-        % Definir o tamanho da janela da figura (ajustando a propriedade 'Position')
-        set(gcf, 'Position', [100, 100, 1300, 600]); % [x, y, largura, altura]
-
-        % Gráfico circular
-        subplot(1, 2, 1);
-        pie(categoria_counts);
-        legend(unique(user_data.Category), 'Location', 'bestoutside');
-        title(['Distribuição de Produtos por Categoria para o Utilizador ', num2str(utilizador)]);
-    
-        % --- FINALIZAÇÃO DO GRÁFICO DE BARRAS ---
-        % Criar gráfico de barras para as probabilidades logarítmicas
-        subplot(1, 2, 2);
-        bar(prob_log);
-        title('Logaritmo das Probabilidades para cada Categoria');
-        xlabel('Categorias');
-        ylabel('Log(P(C|F))');
-        set(gca, 'XTickLabel', Category(categories), 'XTick', 1:length(categories));
-        xtickangle(45);  % Rotaciona os rótulos do eixo X para maior legibilidade
-        grid on;
-    
-        % Destacar a categoria prevista no gráfico
-        hold on;
-        bar(predicted_Category, prob_log(predicted_Category), 'FaceColor', 'r', 'EdgeColor', 'k');
-        legend('Log(P(C|F))', 'Categoria Prevista', 'Location', 'Best');
-        hold off;
-    
-        % Finalizar waitbar
-        waitbar(1, h, 'Gráficos concluídos!');
-        pause(1);
-        close(h);
-    end
-end
-
+fprintf('Predicted Category: %s\n', Category{nomes_previstos});
 
 %% ---- Bloom Filter: Eliminar Produtos Já Comprados ----
 
@@ -147,25 +132,6 @@ for j = 1:height(Category_data)
     if ~filtro(hash_idx) % Se o produto não foi comprado
         recomendacoes_possiveis = [recomendacoes_possiveis; Category_data(j, :)]; % Adiciona à lista de recomendações
     end
-end
-
-function hash_index = hash_function(item, filtro_tamanho)
-    % hash_function: Calcula o índice hash para um item dado o tamanho do Bloom Filter.
-
-    % item (qualquer) -> O identificador do item (geralmente um ProductID) a ser processado.
-    % filtro_tamanho -> O tamanho do Bloom Filter (número de bits no vetor binário).
-    % hash_index -> O índice calculado dentro do intervalo [1, filtro_tamanho].
-
-    % Converter o item para string se necessário
-    if ~ischar(item) && ~isstring(item)
-        item = num2str(item); % Converte o item para string
-    end
-
-    % Converter a string para valores ASCII e somá-los
-    ascii_sum = sum(double(item));
-
-    % Calcular o índice hash usando módulo e ajustar para índices MATLAB
-    hash_index = mod(ascii_sum, filtro_tamanho) + 1;
 end
 
 % Ordenar os produtos recomendados pela coluna 'Rating' em ordem decrescente
@@ -219,49 +185,6 @@ num_itens = numel(itens);
 % Criar assinaturas MinHash
 assinaturas = calcular_assinaturas(Set, num_users, num_hashes, num_itens);
 
-function assinaturas = calcular_assinaturas(set, num_users, num_hashes, num_itens)
-    
-    % Inicializa a matriz de assinaturas (k funções de hash por Nt usuários)
-    assinaturas = inf(num_hashes, num_users);
-
-    % Itera pelas k funções de hash
-    for hf = 1:num_hashes
-
-        % Itera pelos utilizadores (conjuntos de itens)
-        for c = 1:num_users
-            % Obtém os itens comprados pelo utilizador c
-            conjunto = set{c};
-            hc = zeros(1, length(conjunto)); % Vetor para armazenar os valores de hash
-
-            % Itera pelos elementos do conjunto de itens
-            for nelem = 1:length(conjunto)
-                elemento = conjunto(nelem); % Produto/Item
-                hc(nelem) = hash_function_shingles(elemento, hf, num_itens); % Aplica a função de hash
-            end
-
-            % Calcula o valor mínimo entre os valores de hash
-            minhash = min(hc);
-            
-            % Armazena o valor mínimo na matriz de assinaturas
-            assinaturas(hf, c) = minhash;
-        end
-    end
-end
-
-function hash_val = hash_function_shingles(shingle, hf, num_itens)
-    % Número primo para melhorar a dispersão dos valores
-    primo1 = 31;
-    primo2 = 97;
-    
-    % Multiplicação modular para maior dispersão
-    hash_val = mod(primo1 * shingle + primo2 * hf, num_itens) + 1;
-end
-
-% O número de hash functions(num_hashes) é 100.
-% Os números 31 e 97 foram escolhidos porque são suficientemente pequenos 
-% para garantir eficiência computacional, mas grandes o suficiente para 
-% evitar colisões em muitas entradas diferentes.
-
 % Selecionar o utilizador escolhido aleatoriamente
 utilizador_em_especifico = utilizador - 100 + 1; %50 utilizadares de 100 a 149
 
@@ -273,24 +196,6 @@ for ns = 1:num_users
     else
         similarities(ns) = -1;
     end
-end
-
-function similarity = compute_similarity(user1, user2, minhash_signatures, num_hashes)
-
-% Função para calcular a similaridade entre dois utilizadores com base em assinaturas MinHash
-% user1 -> Índice do primeiro utilizador (utilizador principal)
-% user2 -> Índice do segundo utilizador (utilizador a comparar)
-% minhash_signatures -> Matriz onde cada coluna representa as assinaturas MinHash
-% de um utilizador, e cada linha corresponde ao valor de uma hash específica.
-% num_hashes -> Número total de funções de hash usadas para gerar as assinaturas.
-% similarity -> Similaridade de Jaccard aproximada entre os dois utilizadores,
-% calculada pela fração de valores iguais entre as assinaturas MinHash.
-
-    % Comparar as assinaturas MinHash dos dois utilizadores e contar quantas hashes são iguais
-    num_matches = sum(minhash_signatures(:, user1) == minhash_signatures(:, user2));
-    
-    % Calcular a similaridade como a proporção de hashes iguais em relação ao total de hashes
-    similarity = num_matches / num_hashes;
 end
 
 % Encontrar os utilizadores mais similares (top 5)

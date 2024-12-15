@@ -10,6 +10,12 @@ data = data(~any(ismissing(data), 2), {'Name','UserID', 'ProductID', 'Category',
 % Seleciona um utilizador aleatóriamente
 utilizador = input('Insira o UserID de utilizador (de 100 a 149): ');
 
+% Verificar se o valor está dentro do intervalo válido
+while utilizador < 100 || utilizador > 149 || mod(utilizador,1) ~= 0
+    disp('Erro: O UserID deve ser um número inteiro entre 100 e 149.');
+    utilizador = input('Insira o UserID de utilizador (de 100 a 149): ');
+end
+
 % Transformar categorias em índices
 [data.Category_encoded, Category] = grp2idx(data.Category);
 
@@ -37,7 +43,17 @@ end
 rating_previsao = 4.5; 
 prob_log = log(prob_class);
 
-prob_log = atualizar_prob_log(prob_log, rating_previsao, prob_feature_given_class);
+% Atualiza o log das probabilidades para cada classe
+for c = 1:numel(prob_feature_given_class)
+    % Verifica se o rating está dentro do intervalo válido
+    if rating_previsao > 0 && rating_previsao <= numel(prob_feature_given_class{c})
+        % Atualiza usando a probabilidade condicional correspondente
+        prob_log(c) = prob_log(c) + log(prob_feature_given_class{c}(round(rating_previsao)));
+    else
+        % Penaliza fortemente categorias para ratings fora do intervalo
+        prob_log(c) = prob_log(c) + log(1e-10);
+    end
+end
 
 % Obter a categoria prevista
 [~, predicted_Category] = max(prob_log);
@@ -49,4 +65,7 @@ else
     nomes_previstos = categories(predicted_Category);
 end
 
-fprintf('Predicted Category: %s\n', Category{nomes_previstos});
+% Chamar a função para gerar os gráficos, passando os parâmetros necessários
+criar_graficos(user_data, Category, prob_log, categories, predicted_Category,utilizador);
+
+fprintf('\nPredicted Category: %s\n', Category{nomes_previstos});
