@@ -10,6 +10,10 @@ data = data(~any(ismissing(data), 2), {'Name','UserID', 'ProductID', 'Category',
 % Seleciona um utilizador através do terminal
 utilizador = input('Insira o UserID de utilizador (de 100 a 149): ');
 
+% Seleciona um utilizador aleatóriamente
+% alguem = unique(data.UserID);
+% utilizador = alguem(randi(numel(alguem)));
+
 % Verificar se o valor está dentro do intervalo válido
 while utilizador < 100 || utilizador > 149 || mod(utilizador,1) ~= 0
     disp('Erro: O UserID deve ser um número inteiro entre 100 e 149.');

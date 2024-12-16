@@ -1,4 +1,4 @@
-%% ---- MINHASH ----
+ %% ---- MINHASH ----
 % Criar conjuntos de itens por utilizador
 alguem = unique(data.UserID);
 num_users = numel(alguem);

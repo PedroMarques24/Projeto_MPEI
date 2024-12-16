@@ -35,7 +35,14 @@ for c = height(recomendacoes_possiveis):-1:2
     end
 end
 
-produtos = recomendacoes_possiveis(1:end, :);
+% Selecionar os 10 produtos mais bem classificados
+% Se não tiverem 10 produtos imprime a lista toda de produtos que o
+% utilizador ainda não comprou da categoria em questão
+if height(recomendacoes_possiveis)>10
+    produtos =recomendacoes_possiveis(1:10,:);
+else
+    produtos =recomendacoes_possiveis(:,:);
+end
 
 % Exibir os produtos recomendados (da categoria predita e não comprados)
 fprintf('\n                      Produtos da categoria %s com as melhores avaliações.                   \n',Category{nomes_previstos});
