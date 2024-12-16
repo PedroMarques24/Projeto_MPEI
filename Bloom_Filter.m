@@ -1,7 +1,7 @@
 %% ---- Bloom Filter: Eliminar Produtos Já Comprados ----
 
 % Inicializar o Bloom Filter para a categoria prevista
-filtro_tamanho = 1000; 
+filtro_tamanho = 1540; 
 filtro = zeros(1, filtro_tamanho); 
 
 % Adicionar os produtos já comprados pelo utilizador ao Bloom Filter
