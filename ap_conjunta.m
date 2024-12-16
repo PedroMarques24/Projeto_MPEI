@@ -8,13 +8,8 @@ data = data(~any(ismissing(data), 2), {'Name','UserID', 'ProductID', 'Category',
 % ---- NAIVE BAYES ----
 
 % Seleciona um utilizador aleatóriamente
-utilizador = input('Insira o UserID de utilizador (de 100 a 149): ');
-
-% Verificar se o valor está dentro do intervalo válido
-while utilizador < 100 || utilizador > 149 || mod(utilizador,1) ~= 0
-    disp('Erro: O UserID deve ser um número inteiro entre 100 e 149.');
-    utilizador = input('Insira o UserID de utilizador (de 100 a 149): ');
-end
+alguem = unique(data.UserID);
+utilizador = alguem(randi(numel(alguem)));
 
 % Transformar categorias em índices
 [data.Category_encoded, Category] = grp2idx(data.Category);
@@ -43,15 +38,27 @@ end
 rating_previsao = 4.5; 
 prob_log = log(prob_class);
 
-% Atualiza o log das probabilidades para cada classe
-for c = 1:numel(prob_feature_given_class)
-    % Verifica se o rating está dentro do intervalo válido
-    if rating_previsao > 0 && rating_previsao <= numel(prob_feature_given_class{c})
-        % Atualiza usando a probabilidade condicional correspondente
-        prob_log(c) = prob_log(c) + log(prob_feature_given_class{c}(round(rating_previsao)));
-    else
-        % Penaliza fortemente categorias para ratings fora do intervalo
-        prob_log(c) = prob_log(c) + log(1e-10);
+% Atualizar as probabilidades logarítmicas usando a função auxiliar
+prob_log = atualizar_prob_log(prob_log, rating_previsao, prob_feature_given_class);
+
+function prob_log = atualizar_prob_log(prob_log, rating_previsao, prob_feature_given_class)
+    % Função para atualizar o log das probabilidades a posteriori 
+    % com base no rating fornecido e nas probabilidades condicionais.
+
+    % prob_log: vetor inicial de log das probabilidades (a priori ou acumuladas)
+    % rating_previsao: o rating usado para ajustar as probabilidades
+    % prob_feature_given_class: cell array contendo as distribuições condicionais dos ratings para cada classe
+
+    % Atualiza o log das probabilidades para cada classe
+    for c = 1:numel(prob_feature_given_class)
+        % Verifica se o rating está dentro do intervalo válido
+        if rating_previsao > 0 && rating_previsao <= numel(prob_feature_given_class{c})
+            % Atualiza usando a probabilidade condicional correspondente
+            prob_log(c) = prob_log(c) + log(prob_feature_given_class{c}(round(rating_previsao)));
+        else
+            % Penaliza fortemente categorias para ratings fora do intervalo
+            prob_log(c) = prob_log(c) + log(1e-10);
+        end
     end
 end
 
@@ -203,7 +210,6 @@ fprintf('-----------------------------------------------------------------------
 
 %% ---- MINHASH ----
 % Criar conjuntos de itens por utilizador
-alguem = unique(data.UserID);
 num_users = numel(alguem);
 
 Set = cell(num_users, 1);
@@ -347,4 +353,39 @@ fprintf('\n===== Utilizadores Semelhantes =====\n');
 disp(['Usuário selecionado: ', num2str(alguem(utilizador_em_especifico))]);
 for x = 1:numel(users_parecidos)
     disp(['Similaridade com usuário ', num2str(alguem(users_parecidos(x))), ': ', num2str(similarities(users_parecidos(x)))]);
+end
+
+data = readtable('Dataset.csv');
+
+
+% ---- Naive Bayes: tendências ----
+
+[data.Category_encoded, Category] = grp2idx(data.Category);
+
+ratings = data.Rating;
+categorias = data.Category_encoded;
+num_classes = numel(unique(categorias));
+prob_class_geral = histcounts(categorias, [unique(categorias); max(categorias) + 1]);
+prob_class_geral = prob_class_geral / sum(prob_class_geral);
+
+prob_feature_given_class_geral = cell(numel(unique( categorias)), 1);
+for c = 1:numel(unique( categorias))
+    idx_geral = ( categorias == c);
+    ratings_categoria =  ratings(idx_geral); 
+    prob_feature_given_class_geral{c} = (histcounts(ratings_categoria, 1:6) + 1) / (numel(ratings_categoria) + 5);
+end
+
+prob_log_geral = log(prob_class_geral);
+
+% Atualizar o log das probabilidades gerais
+prob_log_geral = atualizar_prob_log(prob_log_geral, rating_previsao, prob_feature_given_class_geral);
+
+% Rankear categorias com maior tendência
+[~, ordem_tendencia] = sort(prob_log_geral, 'descend');
+categorias_tendencia = Category(ordem_tendencia);
+
+% Exibir as categorias com maior tendência
+fprintf('\nCategorias com maior tendência:\n');
+for i = 1:min(5, num_classes) % Exibir top 5 categorias
+    fprintf('%d. %s (Score: %.3f)\n', i, categorias_tendencia{i}, prob_log_geral(ordem_tendencia(i)));
 end

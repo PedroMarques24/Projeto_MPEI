@@ -7,7 +7,7 @@ data = data(~any(ismissing(data), 2), {'Name','UserID', 'ProductID', 'Category',
 
 % ---- NAIVE BAYES ----
 
-% Seleciona um utilizador aleatóriamente
+% Seleciona um utilizador através do terminal
 utilizador = input('Insira o UserID de utilizador (de 100 a 149): ');
 
 % Verificar se o valor está dentro do intervalo válido
@@ -43,17 +43,8 @@ end
 rating_previsao = 4.5; 
 prob_log = log(prob_class);
 
-% Atualiza o log das probabilidades para cada classe
-for c = 1:numel(prob_feature_given_class)
-    % Verifica se o rating está dentro do intervalo válido
-    if rating_previsao > 0 && rating_previsao <= numel(prob_feature_given_class{c})
-        % Atualiza usando a probabilidade condicional correspondente
-        prob_log(c) = prob_log(c) + log(prob_feature_given_class{c}(round(rating_previsao)));
-    else
-        % Penaliza fortemente categorias para ratings fora do intervalo
-        prob_log(c) = prob_log(c) + log(1e-10);
-    end
-end
+% Atualizar as probabilidades logarítmicas usando a função auxiliar
+prob_log = atualizar_prob_log(prob_log, rating_previsao, prob_feature_given_class);
 
 % Obter a categoria prevista
 [~, predicted_Category] = max(prob_log);
